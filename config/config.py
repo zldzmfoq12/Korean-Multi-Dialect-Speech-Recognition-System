@@ -1,0 +1,17 @@
+CFG = {
+    "seed": 42,
+    "num_workers": 8,
+    "whisper_model": "openai/whisper-base",
+    "noise_dim": 64,
+    "lora_rank": 8,
+    "epochs": 5,
+    "batch_size": 16,
+    "val_batch_size": 16,
+    "lr_experts": 1e-4,
+    "weight_decay": 0.01,
+    "patience": 2,
+    "wav_scp": "data/train/wav.scp",
+    "text_file": "data/train/text",
+    "val_wav_scp": "data/dev/wav.scp",
+    "val_text_file": "data/dev/text",
+}
