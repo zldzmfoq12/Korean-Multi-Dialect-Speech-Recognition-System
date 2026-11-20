@@ -87,7 +87,7 @@ class DynamicLoRALinear(nn.Module):
         return out_orig + (delta * self.scaling)
 
 class DialectAwareWhisper(nn.Module):
-    def __init__(self, cfg, dtype=torch.bfloat16):
+    def __init__(self, cfg, dtype=torch.bfloat16, adapter_paths=None):
         super().__init__()
         self.cfg = cfg
 
@@ -111,21 +111,24 @@ class DialectAwareWhisper(nn.Module):
 
         # 3. Dynamic LoRA 주입
         print(f">>> Injecting Dynamic LoRA (Rank={cfg.get('lora_rank', 8)})...")
-        self.inject_dynamic_lora()
+        self.inject_dynamic_lora(adapter_paths)
 
         # 4. Freeze 설정
         self.setup_freeze()
 
-    def inject_dynamic_lora(self):
-        for layer in self.whisper.model.encoder.layers:
-            attn = layer.self_attn
-            # q_proj, v_proj 교체
-            attn.q_proj = DynamicLoRALinear(
-                attn.q_proj, self.noise_dim, rank=self.cfg.get('lora_rank', 8)
-            )
-            attn.v_proj = DynamicLoRALinear(
-                attn.v_proj, self.noise_dim, rank=self.cfg.get('lora_rank', 8)
-            )
+    def inject_dynamic_lora(self, adapter_paths=None):
+        if adapter_paths is None:
+            adapter_paths = [
+                f"model.encoder.layers.{index}.self_attn.{projection}"
+                for index in range(len(self.whisper.model.encoder.layers))
+                for projection in ("q_proj", "v_proj")
+            ]
+
+        rank = self.cfg.get("lora_rank", 8)
+        for path in adapter_paths:
+            original_layer = self.whisper.get_submodule(path)
+            adapter = DynamicLoRALinear(original_layer, self.noise_dim, rank=rank)
+            self.whisper.set_submodule(path, adapter)
 
     def setup_freeze(self):
         # 1. 전체 Freeze

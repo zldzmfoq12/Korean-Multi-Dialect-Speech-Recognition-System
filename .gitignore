@@ -1,4 +1,4 @@
-# Keep the release limited to the ASR source files and documentation.
+# Keep the release limited to the ASR source files, documentation, and packaging workflow.
 *
 !/.gitignore
 !/README.md
@@ -10,3 +10,8 @@
 !/config/config.py
 !/dataset/
 !/dataset/dataset.py
+!/.github/
+!/.github/workflows/
+!/.github/workflows/publish-package.yml
+!/prepare_data.py
+!/filter_mismatch_whisper.py

@@ -1,4 +1,5 @@
 import argparse
+import re
 from pathlib import Path
 
 import torch
@@ -15,10 +16,24 @@ def transcribe(audio_path, dialect_id, checkpoint_path):
     if device.type == "cuda" and torch.cuda.is_bf16_supported():
         dtype = torch.bfloat16
 
-    processor = WhisperProcessor.from_pretrained(CFG["whisper_model"])
-    model = DialectAwareWhisper(CFG, dtype=dtype)
     state = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    model.load_state_dict(state)
+    adapter_paths = [
+        key.removeprefix("whisper.").removesuffix(".original_layer.weight")
+        for key in state
+        if re.fullmatch(
+            r"whisper.model.(encoder.layers.d+.self_attn|"
+            r"decoder.layers.d+.(self_attn|encoder_attn)).[qv]_proj.original_layer.weight",
+            key,
+        )
+    ]
+    if not adapter_paths:
+        raise ValueError("The checkpoint does not contain Whisper Dynamic LoRA weights.")
+
+    # The LRL head is used only for the auxiliary training loss.
+    inference_state = {key: weight for key, weight in state.items() if not key.startswith("lrl_head.")}
+    processor = WhisperProcessor.from_pretrained(CFG["whisper_model"])
+    model = DialectAwareWhisper(CFG, dtype=dtype, adapter_paths=adapter_paths)
+    model.load_state_dict(inference_state)
     model.to(device).eval()
 
     wave, sample_rate = torchaudio.load(audio_path)
