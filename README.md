@@ -68,10 +68,10 @@ python inference.py --audio /path/to/audio.wav --dialect 1 --ckpt exp/best_model
 
 ## Docker CPU 추론
 
-[릴리스](https://github.com/zldzmfoq12/Korean-Multi-Dialect-Speech-Recognition-System/releases/tag/v0.1.0)에서 `moe_whisper_ep5.pth`를 내려받고 추론할 `audio.wav`와 같은 폴더에 둡니다. 처음 추론할 때 기본 Whisper 모델과 토크나이저를 내려받습니다. Linux x86-64 이미지를 사용합니다.
+호환 체크포인트(예: 직접 학습한 `exp/best_model.pth`)를 `checkpoint.pth`로 준비하고, 추론할 `audio.wav`와 같은 폴더에 둡니다. 처음 추론할 때 기본 Whisper 모델과 토크나이저를 내려받습니다. Linux x86-64 이미지를 사용합니다.
 
 ```bash
 docker run --rm -v "$PWD:/input:ro" \
   ghcr.io/zldzmfoq12/korean-multi-dialect-speech-recognition-system:v0.1.0 \
-  --audio /input/audio.wav --dialect 1 --ckpt /input/moe_whisper_ep5.pth
+  --audio /input/audio.wav --dialect 1 --ckpt /input/checkpoint.pth
 ```
